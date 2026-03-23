@@ -57,7 +57,7 @@ export async function signInWithGoogle() {
 
 export async function sendPasswordReset(email) {
   const actionCodeSettings = {
-    url: `${location.origin}/app/client/index.html?auth=login&reset=done`,
+    url: `${location.origin}/index.html?auth=login&reset=done`,
     handleCodeInApp: false
   };
   return sendPasswordResetEmail(auth, email, actionCodeSettings);

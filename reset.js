@@ -1,5 +1,5 @@
-import { completePasswordReset } from "../../core/auth.js";
-import { qs, setNotice } from "../../core/ui.js";
+import { completePasswordReset } from "./auth.js";
+import { qs, setNotice } from "./ui.js";
 qs("#applyBtn").addEventListener("click", async () => {
   try {
     await completePasswordReset(qs("#newPassword").value);

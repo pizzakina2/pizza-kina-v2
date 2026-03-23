@@ -1,5 +1,5 @@
-import { completeEmailVerification } from "../../core/auth.js";
-import { qs, setNotice } from "../../core/ui.js";
+import { completeEmailVerification } from "./auth.js";
+import { qs, setNotice } from "./ui.js";
 qs("#verifyBtn").addEventListener("click", async () => {
   try {
     await completeEmailVerification();

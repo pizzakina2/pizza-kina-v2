@@ -1,6 +1,6 @@
-import { authReady, auth, loginWithEmail, registerWithEmail, signInWithGoogle, sendPasswordReset, onUserChanged } from "../../core/auth.js";
-import { loadPublicSettings, loadMenuItems } from "../../core/menu.js";
-import { qs, setNotice } from "../../core/ui.js";
+import { authReady, auth, loginWithEmail, registerWithEmail, signInWithGoogle, sendPasswordReset, onUserChanged } from "./auth.js";
+import { loadPublicSettings, loadMenuItems } from "./menu.js";
+import { qs, setNotice } from "./ui.js";
 
 const state = {
   settings: null,

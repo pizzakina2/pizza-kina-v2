@@ -2,14 +2,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// TODO: Wklej tutaj nowy config z projektu Firebase v2.
 export const firebaseConfig = {
-  apiKey: "PASTE_API_KEY_HERE",
-  authDomain: "PASTE_AUTH_DOMAIN_HERE",
-  projectId: "PASTE_PROJECT_ID_HERE",
-  storageBucket: "PASTE_STORAGE_BUCKET_HERE",
-  messagingSenderId: "PASTE_MESSAGING_SENDER_ID_HERE",
-  appId: "PASTE_APP_ID_HERE"
+  "apiKey": "AIzaSyBWOEXNkWxxQjGlSFeUB1sH_3IwPuR0JtY",
+  "authDomain": "pizza-kina-v2.firebaseapp.com",
+  "projectId": "pizza-kina-v2",
+  "storageBucket": "pizza-kina-v2.firebasestorage.app",
+  "messagingSenderId": "1012440833599",
+  "appId": "1:1012440833599:web:f7f39eb0325fe363c4a28a"
 };
 
 export const app = initializeApp(firebaseConfig);
