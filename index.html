@@ -7,10 +7,10 @@
   <link rel="stylesheet" href="./client.css" />
 </head>
 <body>
-  <div class="page">
+  <main class="page">
     <header class="topbar">
       <div>
-        <div class="brand">🍕 PiZZA-KINA</div>
+        <div class="brand" id="brandName">🍕 PiZZA-KINA</div>
         <div class="muted">Zamówienia online • klient</div>
       </div>
       <nav class="nav-links">
@@ -21,21 +21,22 @@
       </nav>
     </header>
 
-    <main class="grid">
+    <section class="grid">
       <section class="card hero-card">
         <div class="eyebrow">STARTER V2</div>
         <h1 id="heroTitle">Zamów pizzę online bez dzwonienia.</h1>
         <p id="heroSubtitle">Nowa, modularna wersja projektu. Ten ekran jest szkieletem pod docelowy frontend klienta.</p>
         <div class="hero-actions">
-          <button id="openAuthBtn" class="btn primary">Zaloguj / Rejestruj</button>
-          <button id="guestBtn" class="btn ghost">Gość</button>
+          <button id="openAuthBtn" class="btn primary" type="button">Zaloguj / Rejestruj</button>
+          <button id="guestBtn" class="btn ghost" type="button">Gość</button>
         </div>
+        <div id="authInfo" class="notice" style="margin-top:12px;">Niezalogowany.</div>
       </section>
 
       <section class="card">
         <div class="section-head">
           <h2>Kategorie</h2>
-          <span class="muted">placeholder</span>
+          <span class="muted">pobierane z Firestore</span>
         </div>
         <div id="categories" class="chips"></div>
       </section>
@@ -47,37 +48,39 @@
         </div>
         <div id="menuGrid" class="menu-grid"></div>
       </section>
-    </main>
+    </section>
 
     <footer class="footer">
-      <span>Starter v2</span>
-      <a href="./verify.html">Verify</a>
-      <a href="./reset.html">Reset</a>
+      <div>Starter v2</div>
+      <div class="nav-links">
+        <a href="./verify.html">Verify</a>
+        <a href="./reset.html">Reset</a>
+      </div>
     </footer>
-  </div>
+  </main>
 
-  <div id="authModal" class="modal hidden" aria-hidden="true">
+  <div id="authModal" class="modal hidden" hidden>
     <div class="modal-card">
       <div class="modal-head">
         <h3>Logowanie klienta</h3>
-        <button id="closeAuthBtn" class="icon-btn">✕</button>
+        <button id="closeAuthBtn" class="icon-btn" type="button">✕</button>
       </div>
       <div class="stack">
-        <input id="emailInput" class="input" type="email" placeholder="E-mail" />
-        <input id="passwordInput" class="input" type="password" placeholder="Hasło" />
+        <input id="loginEmail" class="input" type="email" placeholder="E-mail" />
+        <input id="loginPassword" class="input" type="password" placeholder="Hasło" />
         <div class="row">
-          <button id="loginBtn" class="btn primary">Zaloguj</button>
-          <button id="registerBtn" class="btn secondary">Zarejestruj</button>
+          <button id="loginBtn" class="btn primary" type="button">Zaloguj</button>
+          <button id="registerBtn" class="btn secondary" type="button">Zarejestruj</button>
         </div>
         <div class="row">
-          <button id="googleBtn" class="btn ghost">Google</button>
-          <button id="resetBtn" class="btn ghost">Reset hasła</button>
+          <button id="googleBtn" class="btn ghost" type="button">Google</button>
+          <button id="resetBtn" class="btn ghost" type="button">Reset hasła</button>
         </div>
-        <div id="authInfo" class="notice"></div>
+        <div id="authMessage" class="notice"></div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="./client.js?v=3"></script>
+  <script type="module" src="./client.js?v=final1"></script>
 </body>
 </html>

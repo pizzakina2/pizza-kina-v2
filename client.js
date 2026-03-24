@@ -5,6 +5,7 @@ import {
   resetPassword,
   logoutUser,
   onUserChanged,
+  authReady,
 } from "./auth.js";
 
 import { db } from "./firebase.js";
@@ -16,7 +17,7 @@ import {
   query,
   where,
   orderBy,
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const state = {
   user: null,
@@ -32,13 +33,10 @@ const ui = {
   categories: document.getElementById("categories"),
   menuGrid: document.getElementById("menuGrid"),
   authInfo: document.getElementById("authInfo"),
-
   openAuthBtn: document.getElementById("openAuthBtn"),
   guestBtn: document.getElementById("guestBtn"),
-
   authModal: document.getElementById("authModal"),
   closeAuthBtn: document.getElementById("closeAuthBtn"),
-
   loginEmail: document.getElementById("loginEmail"),
   loginPassword: document.getElementById("loginPassword"),
   loginBtn: document.getElementById("loginBtn"),
@@ -48,23 +46,34 @@ const ui = {
   authMessage: document.getElementById("authMessage"),
 };
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function setAuthMessage(message, type = "info") {
   if (!ui.authMessage) return;
   ui.authMessage.textContent = message || "";
-  ui.authMessage.className = "auth-message";
-  if (type === "error") ui.authMessage.classList.add("is-error");
-  if (type === "success") ui.authMessage.classList.add("is-success");
+  ui.authMessage.className = "notice";
+  if (type === "error") ui.authMessage.classList.add("error");
+  if (type === "success") ui.authMessage.classList.add("ok");
 }
 
 function openAuthModal() {
   if (!ui.authModal) return;
   ui.authModal.hidden = false;
+  ui.authModal.classList.remove("hidden");
   setAuthMessage("");
 }
 
 function closeAuthModal() {
   if (!ui.authModal) return;
   ui.authModal.hidden = true;
+  ui.authModal.classList.add("hidden");
 }
 
 function getPanelTarget(role) {
@@ -89,8 +98,8 @@ async function getStaffRole(uid) {
     const data = snap.data();
     if (!data?.active) return null;
     return data.role || null;
-  } catch (e) {
-    console.error("staff role error", e);
+  } catch (error) {
+    console.error("Błąd odczytu staff:", error);
     return null;
   }
 }
@@ -107,10 +116,9 @@ function renderAuthState() {
 
   const email = state.user.email || "brak email";
   const role = state.staffRole || "client";
-
   ui.openAuthBtn.textContent = "Wyloguj";
   ui.guestBtn.textContent =
-    role === "admin" || role === "service" || role === "kitchen" || role === "screen"
+    ["admin", "service", "kitchen", "screen"].includes(role)
       ? `Panel: ${role}`
       : "Moje konto";
 
@@ -142,9 +150,9 @@ async function handleOpenAuthButton() {
     state.staffRole = null;
     renderAuthState();
     setAuthMessage("Wylogowano.", "success");
-  } catch (e) {
-    console.error(e);
-    setAuthMessage("Błąd wylogowania.", "error");
+  } catch (error) {
+    console.error(error);
+    setAuthMessage(`Błąd wylogowania: ${error.message}`, "error");
   }
 }
 
@@ -153,45 +161,51 @@ function handleGuestButton() {
     window.location.href = "./index.html";
     return;
   }
+
   window.location.href = getPanelTarget(state.staffRole);
 }
 
 async function handleLogin() {
   const email = ui.loginEmail?.value?.trim();
   const password = ui.loginPassword?.value || "";
-
+  if (!email || !password) {
+    setAuthMessage("Wpisz e-mail i hasło.", "error");
+    return;
+  }
   try {
     await loginWithEmail(email, password);
     setAuthMessage("Zalogowano.", "success");
-    setTimeout(() => closeAuthModal(), 400);
-  } catch (e) {
-    console.error(e);
-    setAuthMessage(`Firebase: ${e.message}`, "error");
+    setTimeout(closeAuthModal, 400);
+  } catch (error) {
+    console.error(error);
+    setAuthMessage(`Firebase: ${error.message}`, "error");
   }
 }
 
 async function handleRegister() {
   const email = ui.loginEmail?.value?.trim();
   const password = ui.loginPassword?.value || "";
-
+  if (!email || !password) {
+    setAuthMessage("Wpisz e-mail i hasło.", "error");
+    return;
+  }
   try {
     await registerWithEmail(email, password);
-    setAuthMessage("Konto utworzone i zalogowano.", "success");
-    setTimeout(() => closeAuthModal(), 400);
-  } catch (e) {
-    console.error(e);
-    setAuthMessage(`Firebase: ${e.message}`, "error");
+    setAuthMessage("Konto utworzone. Zalogowano.", "success");
+    setTimeout(closeAuthModal, 500);
+  } catch (error) {
+    console.error(error);
+    setAuthMessage(`Firebase: ${error.message}`, "error");
   }
 }
 
 async function handleGoogle() {
   try {
     await loginWithGoogle();
-    setAuthMessage("Zalogowano przez Google.", "success");
-    setTimeout(() => closeAuthModal(), 400);
-  } catch (e) {
-    console.error(e);
-    setAuthMessage(`Firebase: ${e.message}`, "error");
+    setAuthMessage("Logowanie Google uruchomione.", "success");
+  } catch (error) {
+    console.error(error);
+    setAuthMessage(`Firebase: ${error.message}`, "error");
   }
 }
 
@@ -201,13 +215,12 @@ async function handleResetPassword() {
     setAuthMessage("Najpierw wpisz adres e-mail.", "error");
     return;
   }
-
   try {
     await resetPassword(email);
     setAuthMessage("Wysłano e-mail do resetu hasła.", "success");
-  } catch (e) {
-    console.error(e);
-    setAuthMessage(`Firebase: ${e.message}`, "error");
+  } catch (error) {
+    console.error(error);
+    setAuthMessage(`Firebase: ${error.message}`, "error");
   }
 }
 
@@ -220,53 +233,51 @@ async function loadPublicSettings() {
     if (ui.brandName && data.brandName) ui.brandName.textContent = data.brandName;
     if (ui.heroTitle && data.heroTitle) ui.heroTitle.textContent = data.heroTitle;
     if (ui.heroSubtitle && data.heroSubtitle) ui.heroSubtitle.textContent = data.heroSubtitle;
-  } catch (e) {
-    console.error("publicSettings error", e);
+  } catch (error) {
+    console.error("Błąd ładowania publicSettings:", error);
   }
 }
 
 function renderCategories() {
   if (!ui.categories) return;
   if (!state.categories.length) {
-    ui.categories.innerHTML = `<span class="pill">brak kategorii</span>`;
+    ui.categories.innerHTML = `<span class="chip">brak kategorii</span>`;
     return;
   }
-
   ui.categories.innerHTML = state.categories
-    .map((c) => `<span class="pill">${c}</span>`)
+    .map((category) => `<span class="chip">${escapeHtml(category)}</span>`)
     .join("");
 }
 
 function renderMenu() {
   if (!ui.menuGrid) return;
-
   if (!state.menuItems.length) {
     ui.menuGrid.innerHTML = `<div class="card"><p>Brak produktów w menu.</p></div>`;
     return;
   }
 
-  ui.menuGrid.innerHTML = state.menuItems.map((item) => {
-    const price = Number(item.price || 0).toFixed(2);
-    return `
-      <article class="menu-card">
-        <div class="menu-card__image">
-          ${
+  ui.menuGrid.innerHTML = state.menuItems
+    .map((item) => {
+      const price = Number(item.price || 0).toFixed(2);
+      return `
+        <article class="menu-item">
+          <div class="img">${
             item.imageUrl
-              ? `<img src="${item.imageUrl}" alt="${item.name || ""}" loading="lazy">`
-              : `<div class="menu-card__placeholder">brak zdjęcia</div>`
-          }
-        </div>
-        <div class="menu-card__body">
-          <div class="menu-card__header">
-            <h3>${item.name || ""}</h3>
-            <strong>${price} zł</strong>
+              ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name || "")}" style="width:100%;height:100%;object-fit:cover;">`
+              : `brak zdjęcia`
+          }</div>
+          <div class="body">
+            <div class="row" style="justify-content:space-between;align-items:flex-start;">
+              <h3 style="margin:0;">${escapeHtml(item.name || "")}</h3>
+              <div class="price">${price} zł</div>
+            </div>
+            <p>${escapeHtml(item.description || "")}</p>
+            <div class="muted">Kategoria: ${escapeHtml(item.category || "")}</div>
           </div>
-          <p>${item.description || ""}</p>
-          <div class="menu-card__meta">Kategoria: ${item.category || ""}</div>
-        </div>
-      </article>
-    `;
-  }).join("");
+        </article>
+      `;
+    })
+    .join("");
 }
 
 async function loadMenuItems() {
@@ -276,15 +287,13 @@ async function loadMenuItems() {
       where("enabled", "==", true),
       orderBy("sortOrder", "asc")
     );
-
     const snap = await getDocs(q);
     state.menuItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     state.categories = [...new Set(state.menuItems.map((x) => x.category).filter(Boolean))];
-
     renderCategories();
     renderMenu();
-  } catch (e) {
-    console.error("menuItems error", e);
+  } catch (error) {
+    console.error("Błąd ładowania menuItems:", error);
     if (ui.menuGrid) {
       ui.menuGrid.innerHTML = `<div class="card"><p>Nie udało się pobrać menu.</p></div>`;
     }
@@ -295,23 +304,27 @@ function bindEvents() {
   ui.openAuthBtn?.addEventListener("click", handleOpenAuthButton);
   ui.guestBtn?.addEventListener("click", handleGuestButton);
   ui.closeAuthBtn?.addEventListener("click", closeAuthModal);
-
   ui.loginBtn?.addEventListener("click", handleLogin);
   ui.registerBtn?.addEventListener("click", handleRegister);
   ui.googleBtn?.addEventListener("click", handleGoogle);
   ui.resetBtn?.addEventListener("click", handleResetPassword);
-
-  ui.authModal?.addEventListener("click", (e) => {
-    if (e.target === ui.authModal) closeAuthModal();
+  ui.authModal?.addEventListener("click", (event) => {
+    if (event.target === ui.authModal) closeAuthModal();
   });
 }
 
 async function init() {
-  bindEvents();
-  renderAuthState();
-  onUserChanged(handleUserChanged);
-  await loadPublicSettings();
-  await loadMenuItems();
+  try {
+    bindEvents();
+    renderAuthState();
+    await authReady();
+    onUserChanged(handleUserChanged);
+    await loadPublicSettings();
+    await loadMenuItems();
+  } catch (error) {
+    console.error("client init error", error);
+    setAuthMessage(`Start JS: ${error.message}`, "error");
+  }
 }
 
 init();

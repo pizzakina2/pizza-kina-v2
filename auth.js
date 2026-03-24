@@ -1,6 +1,4 @@
-import {
-  auth
-} from "./firebase.js";
+import { auth } from "./firebase.js";
 import {
   GoogleAuthProvider,
   applyActionCode,
@@ -15,19 +13,21 @@ import {
   signInWithPopup,
   signInWithRedirect,
   signOut,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
 } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 const googleProvider = new GoogleAuthProvider();
-let authReadyPromise;
+let readyPromise;
 
 export function authReady() {
-  if (!authReadyPromise) {
-    authReadyPromise = setPersistence(auth, browserLocalPersistence).then(async () => {
-      try { await getRedirectResult(auth); } catch (_) {}
+  if (!readyPromise) {
+    readyPromise = setPersistence(auth, browserLocalPersistence).then(async () => {
+      try {
+        await getRedirectResult(auth);
+      } catch (_) {}
     });
   }
-  return authReadyPromise;
+  return readyPromise;
 }
 
 export function onUserChanged(callback) {
@@ -35,30 +35,36 @@ export function onUserChanged(callback) {
 }
 
 export async function loginWithEmail(email, password) {
+  await authReady();
   return signInWithEmailAndPassword(auth, email, password);
 }
 
 export async function registerWithEmail(email, password) {
+  await authReady();
   const cred = await createUserWithEmailAndPassword(auth, email, password);
-  await sendEmailVerification(cred.user);
+  try {
+    await sendEmailVerification(cred.user);
+  } catch (_) {}
   return cred;
 }
 
-export async function signInWithGoogle() {
+export async function loginWithGoogle() {
+  await authReady();
   try {
     return await signInWithPopup(auth, googleProvider);
   } catch (error) {
     if (String(error?.code || "").includes("popup")) {
-      return signInWithRedirect(auth, googleProvider);
+      await signInWithRedirect(auth, googleProvider);
+      return null;
     }
     throw error;
   }
 }
 
-export async function sendPasswordReset(email) {
+export async function resetPassword(email) {
   const actionCodeSettings = {
-    url: `${location.origin}/index.html?auth=login&reset=done`,
-    handleCodeInApp: false
+    url: `${location.origin}/index.html?reset=done`,
+    handleCodeInApp: false,
   };
   return sendPasswordResetEmail(auth, email, actionCodeSettings);
 }
@@ -77,6 +83,10 @@ export async function completeEmailVerification() {
   const code = getOobCode();
   if (!code) throw new Error("Brak kodu weryfikacji w adresie.");
   return applyActionCode(auth, code);
+}
+
+export function logoutUser() {
+  return signOut(auth);
 }
 
 export { auth, signOut };

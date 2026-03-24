@@ -1,10 +1,24 @@
 import { completePasswordReset } from "./auth.js";
-import { qs, setNotice } from "./ui.js";
-qs("#applyBtn").addEventListener("click", async () => {
+
+const btn = document.getElementById("applyBtn");
+const info = document.getElementById("info");
+const input = document.getElementById("newPassword");
+
+function setNotice(text, ok = false) {
+  info.textContent = text;
+  info.className = "notice" + (ok ? " ok" : "");
+}
+
+btn?.addEventListener("click", async () => {
   try {
-    await completePasswordReset(qs("#newPassword").value);
-    setNotice(qs("#info"), "Hasło zostało zmienione.", "ok");
+    const password = input?.value || "";
+    if (!password || password.length < 6) {
+      setNotice("Hasło musi mieć co najmniej 6 znaków.");
+      return;
+    }
+    await completePasswordReset(password);
+    setNotice("Hasło zostało zmienione.", true);
   } catch (error) {
-    setNotice(qs("#info"), error.message || String(error), "error");
+    setNotice(error.message || String(error));
   }
 });

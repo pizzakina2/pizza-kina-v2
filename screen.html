@@ -3,24 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PiZZA-KINA • screen</title>
-  <link rel="stylesheet" href="./screen.css" />
+  <title>PiZZA-KINA • Ekran</title>
+  <link rel="stylesheet" href="./admin.css" />
 </head>
 <body>
   <main class="page">
-    <header class="card head">
+    <section class="card head">
       <div>
         <div class="brand">🍕 PiZZA-KINA</div>
         <div class="muted">Panel: screen</div>
       </div>
-      <a href="./index.html">Klient</a>
-    </header>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <a href="./index.html">Klient</a>
+        <button id="logoutBtn" class="btn" type="button" style="width:auto;min-width:120px;">Wyloguj</button>
+      </div>
+    </section>
+
     <section class="card">
-      <h1>Screen</h1>
+      <h1>Ekran</h1>
       <p>Starter widoku screen. Ten ekran będzie rozwijany w kolejnych etapach v2.</p>
-      <div id="info" class="notice">Brak danych roboczych.</div>
+      <div id="userInfo" class="notice">Sprawdzanie uprawnień...</div>
     </section>
   </main>
-  <script type="module" src="./screen.js"></script>
+  <script type="module" src="./screen.js?v=final1"></script>
 </body>
 </html>

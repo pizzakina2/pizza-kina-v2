@@ -1,10 +1,18 @@
 import { completeEmailVerification } from "./auth.js";
-import { qs, setNotice } from "./ui.js";
-qs("#verifyBtn").addEventListener("click", async () => {
+
+const btn = document.getElementById("verifyBtn");
+const info = document.getElementById("info");
+
+function setNotice(text, ok = false) {
+  info.textContent = text;
+  info.className = "notice" + (ok ? " ok" : "");
+}
+
+btn?.addEventListener("click", async () => {
   try {
     await completeEmailVerification();
-    setNotice(qs("#info"), "Adres e-mail potwierdzony.", "ok");
+    setNotice("Adres e-mail potwierdzony.", true);
   } catch (error) {
-    setNotice(qs("#info"), error.message || String(error), "error");
+    setNotice(error.message || String(error));
   }
 });
