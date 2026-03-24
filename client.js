@@ -48,22 +48,12 @@ const ui = {
   authMessage: document.getElementById("authMessage"),
 };
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 function setAuthMessage(message, type = "info") {
   if (!ui.authMessage) return;
   ui.authMessage.textContent = message || "";
-  ui.authMessage.classList.remove("is-error", "is-success", "is-info");
+  ui.authMessage.className = "auth-message";
   if (type === "error") ui.authMessage.classList.add("is-error");
-  else if (type === "success") ui.authMessage.classList.add("is-success");
-  else ui.authMessage.classList.add("is-info");
+  if (type === "success") ui.authMessage.classList.add("is-success");
 }
 
 function openAuthModal() {
@@ -92,99 +82,6 @@ function getPanelTarget(role) {
   }
 }
 
-async function loadPublicSettings() {
-  try {
-    const snap = await getDoc(doc(db, "publicSettings", "current"));
-    if (!snap.exists()) return;
-    const data = snap.data();
-
-    if (ui.brandName && data.brandName) ui.brandName.textContent = data.brandName;
-    if (ui.heroTitle && data.heroTitle) ui.heroTitle.textContent = data.heroTitle;
-    if (ui.heroSubtitle && data.heroSubtitle) ui.heroSubtitle.textContent = data.heroSubtitle;
-  } catch (error) {
-    console.error("Błąd ładowania publicSettings:", error);
-  }
-}
-
-async function loadMenuItems() {
-  try {
-    const q = query(
-      collection(db, "menuItems"),
-      where("enabled", "==", true),
-      orderBy("sortOrder", "asc")
-    );
-
-    const snap = await getDocs(q);
-
-    state.menuItems = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    }));
-
-    state.categories = [...new Set(state.menuItems.map((item) => item.category).filter(Boolean))];
-
-    renderCategories();
-    renderMenu();
-  } catch (error) {
-    console.error("Błąd ładowania menuItems:", error);
-    if (ui.menuGrid) {
-      ui.menuGrid.innerHTML = `<div class="card"><p>Nie udało się pobrać menu.</p></div>`;
-    }
-  }
-}
-
-function renderCategories() {
-  if (!ui.categories) return;
-
-  if (!state.categories.length) {
-    ui.categories.innerHTML = `<span class="pill">brak kategorii</span>`;
-    return;
-  }
-
-  ui.categories.innerHTML = state.categories
-    .map((category) => `<span class="pill">${escapeHtml(category)}</span>`)
-    .join("");
-}
-
-function renderMenu() {
-  if (!ui.menuGrid) return;
-
-  if (!state.menuItems.length) {
-    ui.menuGrid.innerHTML = `<div class="card"><p>Brak produktów w menu.</p></div>`;
-    return;
-  }
-
-  ui.menuGrid.innerHTML = state.menuItems
-    .map((item) => {
-      const price = Number(item.price || 0).toFixed(2);
-      const name = escapeHtml(item.name);
-      const description = escapeHtml(item.description || "");
-      const category = escapeHtml(item.category || "");
-      const imageUrl = item.imageUrl ? escapeHtml(item.imageUrl) : "";
-
-      return `
-        <article class="menu-card">
-          <div class="menu-card__image">
-            ${
-              imageUrl
-                ? `<img src="${imageUrl}" alt="${name}" loading="lazy">`
-                : `<div class="menu-card__placeholder">brak zdjęcia</div>`
-            }
-          </div>
-          <div class="menu-card__body">
-            <div class="menu-card__header">
-              <h3>${name}</h3>
-              <strong>${price} zł</strong>
-            </div>
-            <p>${description}</p>
-            <div class="menu-card__meta">Kategoria: ${category}</div>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-}
-
 async function getStaffRole(uid) {
   try {
     const snap = await getDoc(doc(db, "staff", uid));
@@ -192,8 +89,8 @@ async function getStaffRole(uid) {
     const data = snap.data();
     if (!data?.active) return null;
     return data.role || null;
-  } catch (error) {
-    console.error("Błąd odczytu staff:", error);
+  } catch (e) {
+    console.error("staff role error", e);
     return null;
   }
 }
@@ -222,18 +119,6 @@ function renderAuthState() {
   }
 }
 
-  const email = state.user.email || "brak email";
-  const role = state.staffRole || "client";
-
-  ui.openAuthBtn.textContent = "Wyloguj";
-  ui.guestBtn.textContent =
-    role === "admin" || role === "service" || role === "kitchen" || role === "screen"
-      ? `Panel: ${role}`
-      : "Moje konto";
-
-  ui.authInfo.textContent = `Zalogowano: ${email} • rola: ${role}`;
-}
-
 async function handleUserChanged(user) {
   state.user = user;
   state.staffRole = null;
@@ -257,9 +142,9 @@ async function handleOpenAuthButton() {
     state.staffRole = null;
     renderAuthState();
     setAuthMessage("Wylogowano.", "success");
-  } catch (error) {
-    console.error(error);
-    setAuthMessage(`Błąd wylogowania: ${error.message}`, "error");
+  } catch (e) {
+    console.error(e);
+    setAuthMessage("Błąd wylogowania.", "error");
   }
 }
 
@@ -268,9 +153,7 @@ function handleGuestButton() {
     window.location.href = "./index.html";
     return;
   }
-
-  const target = getPanelTarget(state.staffRole);
-  window.location.href = target;
+  window.location.href = getPanelTarget(state.staffRole);
 }
 
 async function handleLogin() {
@@ -280,10 +163,10 @@ async function handleLogin() {
   try {
     await loginWithEmail(email, password);
     setAuthMessage("Zalogowano.", "success");
-    setTimeout(() => closeAuthModal(), 500);
-  } catch (error) {
-    console.error(error);
-    setAuthMessage(`Firebase: ${error.message}`, "error");
+    setTimeout(() => closeAuthModal(), 400);
+  } catch (e) {
+    console.error(e);
+    setAuthMessage(`Firebase: ${e.message}`, "error");
   }
 }
 
@@ -294,10 +177,10 @@ async function handleRegister() {
   try {
     await registerWithEmail(email, password);
     setAuthMessage("Konto utworzone i zalogowano.", "success");
-    setTimeout(() => closeAuthModal(), 700);
-  } catch (error) {
-    console.error(error);
-    setAuthMessage(`Firebase: ${error.message}`, "error");
+    setTimeout(() => closeAuthModal(), 400);
+  } catch (e) {
+    console.error(e);
+    setAuthMessage(`Firebase: ${e.message}`, "error");
   }
 }
 
@@ -305,16 +188,15 @@ async function handleGoogle() {
   try {
     await loginWithGoogle();
     setAuthMessage("Zalogowano przez Google.", "success");
-    setTimeout(() => closeAuthModal(), 500);
-  } catch (error) {
-    console.error(error);
-    setAuthMessage(`Firebase: ${error.message}`, "error");
+    setTimeout(() => closeAuthModal(), 400);
+  } catch (e) {
+    console.error(e);
+    setAuthMessage(`Firebase: ${e.message}`, "error");
   }
 }
 
 async function handleResetPassword() {
   const email = ui.loginEmail?.value?.trim();
-
   if (!email) {
     setAuthMessage("Najpierw wpisz adres e-mail.", "error");
     return;
@@ -323,9 +205,89 @@ async function handleResetPassword() {
   try {
     await resetPassword(email);
     setAuthMessage("Wysłano e-mail do resetu hasła.", "success");
-  } catch (error) {
-    console.error(error);
-    setAuthMessage(`Firebase: ${error.message}`, "error");
+  } catch (e) {
+    console.error(e);
+    setAuthMessage(`Firebase: ${e.message}`, "error");
+  }
+}
+
+async function loadPublicSettings() {
+  try {
+    const snap = await getDoc(doc(db, "publicSettings", "current"));
+    if (!snap.exists()) return;
+    const data = snap.data();
+
+    if (ui.brandName && data.brandName) ui.brandName.textContent = data.brandName;
+    if (ui.heroTitle && data.heroTitle) ui.heroTitle.textContent = data.heroTitle;
+    if (ui.heroSubtitle && data.heroSubtitle) ui.heroSubtitle.textContent = data.heroSubtitle;
+  } catch (e) {
+    console.error("publicSettings error", e);
+  }
+}
+
+function renderCategories() {
+  if (!ui.categories) return;
+  if (!state.categories.length) {
+    ui.categories.innerHTML = `<span class="pill">brak kategorii</span>`;
+    return;
+  }
+
+  ui.categories.innerHTML = state.categories
+    .map((c) => `<span class="pill">${c}</span>`)
+    .join("");
+}
+
+function renderMenu() {
+  if (!ui.menuGrid) return;
+
+  if (!state.menuItems.length) {
+    ui.menuGrid.innerHTML = `<div class="card"><p>Brak produktów w menu.</p></div>`;
+    return;
+  }
+
+  ui.menuGrid.innerHTML = state.menuItems.map((item) => {
+    const price = Number(item.price || 0).toFixed(2);
+    return `
+      <article class="menu-card">
+        <div class="menu-card__image">
+          ${
+            item.imageUrl
+              ? `<img src="${item.imageUrl}" alt="${item.name || ""}" loading="lazy">`
+              : `<div class="menu-card__placeholder">brak zdjęcia</div>`
+          }
+        </div>
+        <div class="menu-card__body">
+          <div class="menu-card__header">
+            <h3>${item.name || ""}</h3>
+            <strong>${price} zł</strong>
+          </div>
+          <p>${item.description || ""}</p>
+          <div class="menu-card__meta">Kategoria: ${item.category || ""}</div>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+async function loadMenuItems() {
+  try {
+    const q = query(
+      collection(db, "menuItems"),
+      where("enabled", "==", true),
+      orderBy("sortOrder", "asc")
+    );
+
+    const snap = await getDocs(q);
+    state.menuItems = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    state.categories = [...new Set(state.menuItems.map((x) => x.category).filter(Boolean))];
+
+    renderCategories();
+    renderMenu();
+  } catch (e) {
+    console.error("menuItems error", e);
+    if (ui.menuGrid) {
+      ui.menuGrid.innerHTML = `<div class="card"><p>Nie udało się pobrać menu.</p></div>`;
+    }
   }
 }
 
@@ -339,8 +301,8 @@ function bindEvents() {
   ui.googleBtn?.addEventListener("click", handleGoogle);
   ui.resetBtn?.addEventListener("click", handleResetPassword);
 
-  ui.authModal?.addEventListener("click", (event) => {
-    if (event.target === ui.authModal) closeAuthModal();
+  ui.authModal?.addEventListener("click", (e) => {
+    if (e.target === ui.authModal) closeAuthModal();
   });
 }
 
