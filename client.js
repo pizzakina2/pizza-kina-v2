@@ -199,14 +199,28 @@ async function getStaffRole(uid) {
 }
 
 function renderAuthState() {
-  if (!ui.openAuthBtn || !ui.guestBtn || !ui.authInfo) return;
+  if (!ui.openAuthBtn || !ui.guestBtn) return;
 
   if (!state.user) {
     ui.openAuthBtn.textContent = "Zaloguj / Rejestruj";
     ui.guestBtn.textContent = "Gość";
-    ui.authInfo.textContent = "Niezalogowany.";
+    if (ui.authInfo) ui.authInfo.textContent = "Niezalogowany.";
     return;
   }
+
+  const email = state.user.email || "brak email";
+  const role = state.staffRole || "client";
+
+  ui.openAuthBtn.textContent = "Wyloguj";
+  ui.guestBtn.textContent =
+    role === "admin" || role === "service" || role === "kitchen" || role === "screen"
+      ? `Panel: ${role}`
+      : "Moje konto";
+
+  if (ui.authInfo) {
+    ui.authInfo.textContent = `Zalogowano: ${email} • rola: ${role}`;
+  }
+}
 
   const email = state.user.email || "brak email";
   const role = state.staffRole || "client";
