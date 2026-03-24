@@ -1,0 +1,30 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "settings": {
+      ".read": true,
+      ".write": "auth != null && auth.token.email == 'admin@pizza.pl'"
+    },
+    "counters": {
+      "$dateKey": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "orders": {
+      ".read": true,
+      "$orderId": {
+        ".write": "auth != null"
+      }
+    },
+    "userOrders": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid == $uid || auth.token.email == 'admin@pizza.pl')",
+        "$orderId": {
+          ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'admin@pizza.pl')"
+        }
+      }
+    }
+  }
+}

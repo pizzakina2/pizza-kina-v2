@@ -1,50 +1,9 @@
-import { onUserChanged, logoutUser, authReady } from "./auth.js";
-import { db } from "./firebase.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-const requiredRole = "kitchen";
-const userInfo = document.getElementById("userInfo");
-const logoutBtn = document.getElementById("logoutBtn");
-
-function setNotice(text, ok = false) {
-  if (!userInfo) return;
-  userInfo.textContent = text;
-  userInfo.className = "notice" + (ok ? " ok" : "");
-}
-
-async function getStaffRole(uid) {
-  const snap = await getDoc(doc(db, "staff", uid));
-  if (!snap.exists()) return null;
-  const data = snap.data();
-  if (!data?.active) return null;
-  return data.role || null;
-}
-
-logoutBtn?.addEventListener("click", async () => {
-  await logoutUser();
-  location.href = "./index.html?v=final1";
-});
-
-await authReady();
-
-onUserChanged(async (user) => {
-  if (!user) {
-    setNotice("Brak zalogowanego użytkownika. Wracam do strony klienta.");
-    setTimeout(() => {
-      location.href = "./index.html?v=final1";
-    }, 600);
-    return;
-  }
-
-  try {
-    const role = await getStaffRole(user.uid);
-    if (role !== requiredRole && !(requiredRole !== "admin" && role === "admin")) {
-      setNotice(`Brak uprawnień. Zalogowano jako: ${user.email || "brak email"} • rola: ${role || "client"}`);
-      return;
-    }
-    setNotice(`Zalogowano jako: ${user.email || "brak email"} • rola: ${role}`, true);
-  } catch (error) {
-    console.error(error);
-    setNotice("Błąd odczytu uprawnień.");
-  }
-});
+import { auth, signInWithEmailAndPassword, signOut, onAuthStateChanged, initAuthPersistence, subscribeOrders, subscribeSettings, applyTheme, requireAdmin, $, ordersArray, badgeHtml, orderSummaryLines, updateOrderStatus, KITCHEN_STATUS_OPTIONS, countsForKitchen, activeOrdersList, playSound, formatDelivery } from "./shared.js";
+let settings=null; let ordersMap={}; let lastActiveCount=0; const FLOW=["oczekuje","potwierdzone","w realizacji","gotowe do odbioru","odebrane"]; function nextStatus(value){ const index=FLOW.indexOf(value); return FLOW[index+1] || value; }
+function renderKitchen(){ const active=ordersArray(ordersMap).filter((order)=>!["odebrane","anulowane"].includes(order.status)); $("kitchenOrdersBody").innerHTML = active.length ? active.map((order)=>`<tr><td>${order.shortNumber}</td><td>${order.customerName || "-"}</td><td>${orderSummaryLines(order)}</td><td>${order.note || "-"}</td><td>${order.pickupTime || "-"}</td><td>${formatDelivery(order)}</td><td>${badgeHtml(order.status)}</td><td><button class="btn btn-secondary" data-next="${order.orderId}" style="padding:8px 12px">➡</button><select class="select" data-status="${order.orderId}" style="margin-top:8px"><option value="${order.status}" selected>${order.status}</option>${KITCHEN_STATUS_OPTIONS.filter((status)=>status!==order.status).map((status)=>`<option value="${status}">${status}</option>`).join("")}</select></td></tr>`).join("") : `<tr><td colspan="7" class="small">Brak zamówień w kuchni.</td></tr>`;
+document.querySelectorAll("[data-status]").forEach((select)=>select.addEventListener("change", async (event)=>{ try{ await updateOrderStatus(event.target.dataset.status, event.target.value); }catch(error){ alert(`Status błąd: ${error.code || "unknown"} | ${error.message || error}`); } })); document.querySelectorAll("[data-next]").forEach((button)=>button.addEventListener("click", async ()=>{ const order=active.find((item)=>item.orderId===button.dataset.next); if(!order) return; await updateOrderStatus(order.orderId, nextStatus(order.status)); }));
+const prep=countsForKitchen(ordersMap); $("prepBody").innerHTML = prep.length ? prep.map((line)=>`<tr><td>${line.name}</td><td>${line.qty}</td></tr>`).join("") : `<tr><td colspan="2" class="small">Brak pozycji do przygotowania.</td></tr>`; }
+async function loginAdmin(){ const email=$("email").value.trim(); const password=$("password").value.trim(); if(!email || !password) return alert("Podaj email i hasło admina."); try{ await signInWithEmailAndPassword(auth, email, password); alert("Logowanie OK"); }catch(error){ alert(`Logowanie błąd: ${error.code || "unknown"} | ${error.message || error}`); } }
+async function initPage(){ await initAuthPersistence(); subscribeSettings((nextSettings)=>{ settings=nextSettings; applyTheme(settings); }); subscribeOrders((nextOrders)=>{ ordersMap=nextOrders || {}; const active=activeOrdersList(ordersMap); if(lastActiveCount && active.length > lastActiveCount){ playSound(settings?.sounds?.kitchenUrl || "", settings?.sounds?.kitchenEnabled !== false, settings?.sounds?.kitchenVolume ?? 0.7); } lastActiveCount=active.length; renderKitchen(); }); onAuthStateChanged(auth, (user)=>{ const ok=requireAdmin(user); $("loginBox").classList.toggle("hidden", ok); $("appBox").classList.toggle("hidden", !ok); $("viewerBadge").textContent = ok ? "Kuchnia" : "Gość"; }); $("loginBtn").addEventListener("click", loginAdmin); $("logoutBtn").addEventListener("click", async ()=>{ await signOut(auth); }); }
+initPage();

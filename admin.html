@@ -1,30 +1,112 @@
-<!doctype html>
-<html lang="pl">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PiZZA-KINA • Admin</title>
-  <link rel="stylesheet" href="./admin.css" />
-</head>
-<body>
-  <main class="page">
-    <section class="card head">
-      <div>
-        <div class="brand">🍕 PiZZA-KINA</div>
-        <div class="muted">Panel: admin</div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <a href="./index.html">Klient</a>
-        <button id="logoutBtn" class="btn" type="button" style="width:auto;min-width:120px;">Wyloguj</button>
-      </div>
-    </section>
+<!DOCTYPE html><html lang="pl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"><title>PIZZA_KINA • admin</title><meta name="theme-color" content="#121212"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="stylesheet" href="style.css"></head><body>
+<header class="topbar"><div class="topbar-inner"><div class="brand"><a href="index.html" class="brand-logo">🍕</a><div><h1 data-text-key="adminTitle">Panel admina</h1><small data-text-key="adminSubtitle">Ustawienia czasu realizacji, wyglądu, menu, dźwięków i treści.</small></div></div><div class="status-pill" id="adminStatus">Admin nie jest zalogowany.</div></div></header>
+<main class="wrap page"><section class="panel" id="loginBox"><div class="panel-head"><h3>Logowanie admina</h3><p>Użyj konta admin@pizza.pl.</p></div><div class="panel-body stack"><input class="control" id="adminEmail" type="email" placeholder="Email admina"><input class="control" id="adminPassword" type="password" placeholder="Hasło admina"><div class="row"><button class="btn btn-primary" id="loginBtn">Zaloguj</button><a href="index.html"><button type="button" class="btn btn-secondary">Klient</button></a></div></div></section>
 
-    <section class="card">
-      <h1>Admin</h1>
-      <p>Starter widoku admin. Ten ekran będzie rozwijany w kolejnych etapach v2.</p>
-      <div id="userInfo" class="notice">Sprawdzanie uprawnień...</div>
-    </section>
-  </main>
-  <script type="module" src="./admin.js?v=final1"></script>
-</body>
-</html>
+<section id="adminApp" class="hidden stack">
+  <section class="panel no-print"><div class="panel-body"><div class="segmented"><button class="btn btn-primary" data-tab="tab-general">Ogólne</button><button class="btn btn-secondary" data-tab="tab-theme">Wygląd i treści</button><button class="btn btn-secondary" data-tab="tab-menu">Menu</button><button class="btn btn-secondary" data-tab="tab-sounds">Dźwięki</button><button class="btn btn-secondary" data-tab="tab-orders">Historia zamówień</button></div></div></section>
+
+  <section class="panel tab-content active" id="tab-general"><div class="panel-head"><h3>Ustawienia realizacji</h3><p>Najbliższy czas odbioru liczy się automatycznie z minimum 15 minut i przepustowości.</p></div><div class="panel-body stack"><div class="row"><div><label class="small">Minimalny czas realizacji (min)</label><input class="control" id="capacity-minLeadMinutes" type="number" min="15"></div><div><label class="small">Długość slotu (min)</label><input class="control" id="capacity-slotMinutes" type="number" min="5"></div><div><label class="small">Ile sztuk na slot</label><input class="control" id="capacity-unitsPerSlot" type="number" min="1"></div></div><div class="small">Przykład: 15 min, 15 min slot, 4 sztuki na slot = przy obciążeniu system przesuwa możliwe godziny odbioru.</div><div class="row"><div><label class="small">Otwarcie</label><input class="control" id="schedule-openTime" type="time"></div><div><label class="small">Zamknięcie</label><input class="control" id="schedule-closeTime" type="time"></div></div><div class="stack"><strong>Dni otwarcia</strong><div class="row">
+<label class="small"><input type="checkbox" id="schedule-day-1"> Pon</label>
+<label class="small"><input type="checkbox" id="schedule-day-2"> Wt</label>
+<label class="small"><input type="checkbox" id="schedule-day-3"> Śr</label>
+<label class="small"><input type="checkbox" id="schedule-day-4"> Czw</label>
+<label class="small"><input type="checkbox" id="schedule-day-5"> Pt</label>
+<label class="small"><input type="checkbox" id="schedule-day-6"> Sob</label>
+<label class="small"><input type="checkbox" id="schedule-day-0"> Niedz</label>
+</div></div><div class="stack"><strong>Metody realizacji</strong><div class="row"><label class="small"><input type="checkbox" id="delivery-home-enabled"> aktywne</label><input class="control" id="delivery-home-label" placeholder="U mnie w domu"></div><div class="row"><label class="small"><input type="checkbox" id="delivery-pickup-enabled"> aktywne</label><input class="control" id="delivery-pickup-label" placeholder="Odbiór osobisty"></div><div class="row"><label class="small"><input type="checkbox" id="delivery-delivery-enabled"> aktywne</label><input class="control" id="delivery-delivery-label" placeholder="Dowóz"></div></div></div></section>
+
+  <section class="panel tab-content" id="tab-theme"><div class="panel-head"><h3>Wygląd i treści</h3><p>Edycja napisów, obrazów, kolorów i typografii.</p></div><div class="panel-body stack">
+  <div class="row"><div><label class="small">Nazwa marki</label><input class="control" id="text-brandName"></div><div><label class="small">Emoji/logo</label><input class="control" id="media-logoEmoji"></div></div>
+  <div class="row"><div><label class="small">Hero title</label><input class="control" id="text-heroTitle"></div><div><label class="small">Hero subtitle</label><input class="control" id="text-heroSubtitle"></div></div>
+  <div class="row"><div><label class="small">Menu title</label><input class="control" id="text-menuTitle"></div><div><label class="small">Menu subtitle</label><input class="control" id="text-menuSubtitle"></div></div>
+  <div class="row"><div><label class="small">Konto title</label><input class="control" id="text-accountTitle"></div><div><label class="small">Konto subtitle</label><input class="control" id="text-accountSubtitle"></div></div>
+  <div class="row"><div><label class="small">Moje zamówienia title</label><input class="control" id="text-ordersTitle"></div><div><label class="small">Moje zamówienia subtitle</label><input class="control" id="text-ordersSubtitle"></div></div>
+  <div class="row"><div><label class="small">Tytuł obsługi</label><input class="control" id="text-serviceTitle"></div><div><label class="small">Opis obsługi</label><input class="control" id="text-serviceSubtitle"></div></div>
+  <div class="row"><div><label class="small">Tytuł kuchni</label><input class="control" id="text-kitchenTitle"></div><div><label class="small">Opis kuchni</label><input class="control" id="text-kitchenSubtitle"></div></div>
+  <div class="row"><div><label class="small">Tytuł ekranu</label><input class="control" id="text-screenTitle"></div><div><label class="small">Opis ekranu</label><input class="control" id="text-screenSubtitle"></div></div>
+  <div class="row"><div><label class="small">Kolor tła</label><input class="control" id="theme-bgColor" type="color"></div><div><label class="small">Kolor paneli</label><input class="control" id="theme-panelColor" type="color"></div><div><label class="small">Kolor przycisków</label><input class="control" id="theme-primaryColor" type="color"></div><div><label class="small">Kolor tekstu</label><input class="control" id="theme-textColor" type="color"></div></div>
+  <div class="row"><div><label class="small">Font-family</label><input class="control" id="theme-fontFamily"></div><div><label class="small">Nagłówki px</label><input class="control" id="theme-headingSizePx" type="number"></div><div><label class="small">Tekst px</label><input class="control" id="theme-bodySizePx" type="number"></div></div>
+  <div class="row"><div><label class="small">Obraz hero 1</label><input class="control" id="media-heroMain"><input class="control" id="file-heroMain" type="file" accept="image/*"><img class="file-preview" id="preview-heroMain" alt="preview 1"></div><div><label class="small">Obraz hero 2</label><input class="control" id="media-heroSecondary"><input class="control" id="file-heroSecondary" type="file" accept="image/*"><img class="file-preview" id="preview-heroSecondary" alt="preview 2"></div><div><label class="small">Obraz hero 3</label><input class="control" id="media-heroThird"><input class="control" id="file-heroThird" type="file" accept="image/*"><img class="file-preview" id="preview-heroThird" alt="preview 3"></div></div></div></section>
+
+  <section class="panel tab-content" id="tab-menu"><div class="panel-head"><h3>Edycja menu</h3><p>Nazwa, cena, opis, ilość, aktywność i zdjęcie z linku lub z pliku.</p></div><div class="panel-body stack"><div class="row"><div><label class="small">Nowa nazwa</label><input class="control" id="newMenuName"></div><div><label class="small">Cena</label><input class="control" id="newMenuPrice" type="number" step="0.01"></div><div><label class="small">Ilość</label><input class="control" id="newMenuQuantity" type="number" value="999"></div></div><div class="row"><div><label class="small">Opis</label><input class="control" id="newMenuDescription"></div><div><label class="small">Zdjęcie (link)</label><input class="control" id="newMenuImage"></div></div><button class="btn btn-primary no-print" id="addMenuItemBtn">Dodaj nowy produkt</button><div class="table-wrap"><table class="table"><thead><tr><th>Nazwa</th><th>Cena</th><th>Opis</th><th>Ilość</th><th>Aktywny</th><th>Zdjęcie</th><th>Usuń</th></tr></thead><tbody id="menuEditorBody"></tbody></table></div></div></section>
+
+  
+<section class="panel tab-content" id="tab-sounds"><div class="panel-head"><h3>Dźwięki powiadomień</h3><p>Dla obsługi i kuchni: link albo plik z komputera.</p></div><div class="panel-body stack">
+  <div class="row">
+    <div>
+      <label class="small">Obsługa — link do pliku audio</label>
+      <input class="control" id="sound-serviceUrl">
+      <input class="control" id="file-sound-service" type="file" accept="audio/*">
+      <label class="small">Głośność obsługi</label>
+      <input class="control" id="sound-serviceVolume" type="range" min="0" max="1" step="0.05">
+      <label class="small"><input type="checkbox" id="sound-serviceEnabled"> Włącz dźwięk obsługi</label>
+    </div>
+    <div>
+      <label class="small">Kuchnia — link do pliku audio</label>
+      <input class="control" id="sound-kitchenUrl">
+      <input class="control" id="file-sound-kitchen" type="file" accept="audio/*">
+      <label class="small">Głośność kuchni</label>
+      <input class="control" id="sound-kitchenVolume" type="range" min="0" max="1" step="0.05">
+      <label class="small"><input type="checkbox" id="sound-kitchenEnabled"> Włącz dźwięk kuchni</label>
+    </div>
+  </div>
+</div></section>
+
+
+<section class="panel tab-content" id="tab-orders">
+  <div class="panel-head">
+    <h3>Historia zamówień</h3>
+    <p>Wyszukiwanie, limit wyników, zmiana statusów i usuwanie.</p>
+  </div>
+  <div class="panel-body stack">
+    <div class="row no-print">
+      <input class="control" id="orderSearch" placeholder="Szukaj po numerze, kliencie, telefonie, statusie">
+      <select class="select" id="orderLimit">
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+        <option value="0">Wszystkie</option>
+      </select>
+    </div>
+    <div class="row no-print">
+      <label class="small"><input type="checkbox" id="toggleAllOrders"> zaznacz wszystko</label>
+      <select class="select" id="bulkStatus">
+        <option value="">Zmień status zaznaczonych</option>
+        <option value="oczekuje">oczekuje</option>
+        <option value="potwierdzone">potwierdzone</option>
+        <option value="w realizacji">w realizacji</option>
+        <option value="gotowe do odbioru">gotowe do odbioru</option>
+        <option value="odebrane">odebrane</option>
+        <option value="anulowane">anulowane</option>
+      </select>
+      <button class="btn btn-secondary" id="bulkApplyBtn">Zastosuj</button>
+      <button class="btn btn-danger" id="bulkDeleteBtn">Usuń zaznaczone</button>
+    </div>
+    <div class="notice warn" id="ordersAdminInfo">Historia zamówień ładuje się live.</div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="toggleAllOrdersHead"></th>
+            <th>Numer</th>
+            <th>Czas</th>
+            <th>Klient</th>
+            <th>Telefon</th>
+            <th>Zamówienie</th>
+            <th>Odbiór</th>
+            <th>Status</th>
+            <th>➡</th>
+            <th>Zmień</th>
+            <th>Usuń</th>
+          </tr>
+        </thead>
+        <tbody id="ordersAdminBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="panel no-print"><div class="panel-body"><div class="row"><button class="btn btn-primary" id="saveAllBtn">Zapisz wszystkie ustawienia</button><button class="btn btn-ghost" id="logoutBtn">Wyloguj admina</button></div><div class="notice warn" id="saveInfo">Zmiany zapisują się do Firebase i działają live na wszystkich ekranach.</div></div></section>
+</section></main>
+<footer class="footer">PIZZA_KINA • admin</footer><script type="module" src="admin.js"></script></body></html>
