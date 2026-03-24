@@ -1,5 +1,5 @@
 
-import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, subscribeSettings, subscribeOrders, subscribeUserOrders, initAuthPersistence, menuArray, normalizeSettings, money, $, applyTheme, formatOption, createOrder, cartUnits, pickupOptions, ordersArray, badgeHtml, formatDateTime, cancelOrder, orderSummary, installPwaHint, updatePassword } from "./shared.js";
+import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, subscribeSettings, subscribeOrders, subscribeUserOrders, initAuthPersistence, menuArray, normalizeSettings, money, $, applyTheme, formatOption, createOrder, cartUnits, pickupOptions, ordersArray, badgeHtml, formatDateTime, cancelOrder, orderSummary, installPwaHint, updatePassword, sendEmailVerification, sendPasswordResetEmail } from "./shared.js";
 
 let settings = normalizeSettings();
 let ordersMap = {};
@@ -13,6 +13,24 @@ function saveProfileData(profile){ localStorage.setItem("pk_profile_v1", JSON.st
 function loadProfile(){ try{ return JSON.parse(localStorage.getItem("pk_profile_v1") || "{}"); }catch{ return {}; } }
 function validatePhone(value){ return /^\d{9}$/.test(String(value||"").trim()); }
 function validatePassword(value){ return String(value||"").length >= 6; }
+
+function buildActionUrl(pathname){
+  return `${window.location.origin}${pathname}`;
+}
+
+async function sendVerifyEmailToUser(user){
+  return sendEmailVerification(user, {
+    url: buildActionUrl("/verify.html"),
+    handleCodeInApp: true
+  });
+}
+
+async function resetPasswordForEmail(email){
+  return sendPasswordResetEmail(auth, email, {
+    url: buildActionUrl("/reset.html"),
+    handleCodeInApp: true
+  });
+}
 
 function getEnabledDeliveryOptions(){
   return settings?.deliveryOptions || {
@@ -299,8 +317,31 @@ async function registerClient(){
   if(!email || !password) return setAuthState("Podaj email i hasło klienta.", "error");
   if(!validatePassword(password)) return setAuthState("Hasło musi mieć minimum 6 znaków.", "error");
   try{
-    await createUserWithEmailAndPassword(auth, email, password);
-    setAuthState("Konto zostało utworzone.", "ok");
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await sendVerifyEmailToUser(cred.user);
+    await signOut(auth);
+    $("resendVerifyBtn")?.classList.remove("hidden");
+    setAuthState("Konto utworzone. Wysłaliśmy link weryfikacyjny na email.", "ok");
+    toggleAuthDrawer(true);
+  }catch(error){
+    setAuthState(humanAuthError(error.code), "error");
+  }
+}
+
+async function loginClient(){
+  const email=$("clientEmail").value.trim();
+  const password=$("clientPassword").value.trim();
+  if(!email || !password) return setAuthState("Podaj email i hasło klienta.", "error");
+  try{
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    if(!cred.user.emailVerified){
+      await sendVerifyEmailToUser(cred.user);
+      await signOut(auth);
+      $("resendVerifyBtn")?.classList.remove("hidden");
+      return setAuthState("Email nie jest jeszcze potwierdzony. Wysłaliśmy nowy link weryfikacyjny.", "warn");
+    }
+    $("resendVerifyBtn")?.classList.add("hidden");
+    setAuthState("Zalogowano.", "ok");
     toggleAuthDrawer(false);
     if(pendingCheckoutAfterLogin){
       pendingCheckoutAfterLogin = false;
@@ -312,19 +353,32 @@ async function registerClient(){
   }
 }
 
-async function loginClient(){
+
+async function resendVerificationEmail(){
   const email=$("clientEmail").value.trim();
   const password=$("clientPassword").value.trim();
-  if(!email || !password) return setAuthState("Podaj email i hasło klienta.", "error");
+  if(!email || !password) return setAuthState("Podaj email i hasło, aby wysłać ponownie link.", "error");
   try{
-    await signInWithEmailAndPassword(auth, email, password);
-    setAuthState("Zalogowano.", "ok");
-    toggleAuthDrawer(false);
-    if(pendingCheckoutAfterLogin){
-      pendingCheckoutAfterLogin = false;
-      openCartDrawer();
-      toggleCheckout(true);
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    if(cred.user.emailVerified){
+      await signOut(auth);
+      $("resendVerifyBtn")?.classList.add("hidden");
+      return setAuthState("Ten email jest już zweryfikowany. Możesz się zalogować.", "ok");
     }
+    await sendVerifyEmailToUser(cred.user);
+    await signOut(auth);
+    setAuthState("Wysłaliśmy nowy link weryfikacyjny.", "ok");
+  }catch(error){
+    setAuthState(humanAuthError(error.code), "error");
+  }
+}
+
+async function requestPasswordReset(){
+  const email=$("clientEmail").value.trim();
+  if(!email) return setAuthState("Podaj email, aby zresetować hasło.", "error");
+  try{
+    await resetPasswordForEmail(email);
+    setAuthState("Wysłaliśmy email do resetu hasła.", "ok");
   }catch(error){
     setAuthState(humanAuthError(error.code), "error");
   }
@@ -427,6 +481,8 @@ async function initPage(){
 
   $("registerBtn").addEventListener("click", registerClient);
   $("loginBtn").addEventListener("click", loginClient);
+  $("resetPasswordBtn")?.addEventListener("click", requestPasswordReset);
+  $("resendVerifyBtn")?.addEventListener("click", resendVerificationEmail);
   $("logoutTopBtn").addEventListener("click", async ()=>{ await signOut(auth); });
   $("openAuthBtn").addEventListener("click", ()=>toggleAuthDrawer());
   $("openProfileBtn").addEventListener("click", ()=>toggleProfileDrawer());
