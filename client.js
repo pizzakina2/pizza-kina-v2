@@ -60,7 +60,6 @@ function escapeHtml(value) {
 function setAuthMessage(message, type = "info") {
   if (!ui.authMessage) return;
   ui.authMessage.textContent = message || "";
-
   ui.authMessage.classList.remove("is-error", "is-success", "is-info");
   if (type === "error") ui.authMessage.classList.add("is-error");
   else if (type === "success") ui.authMessage.classList.add("is-success");
@@ -97,7 +96,6 @@ async function loadPublicSettings() {
   try {
     const snap = await getDoc(doc(db, "publicSettings", "current"));
     if (!snap.exists()) return;
-
     const data = snap.data();
 
     if (ui.brandName && data.brandName) ui.brandName.textContent = data.brandName;
@@ -191,10 +189,8 @@ async function getStaffRole(uid) {
   try {
     const snap = await getDoc(doc(db, "staff", uid));
     if (!snap.exists()) return null;
-
     const data = snap.data();
     if (!data?.active) return null;
-
     return data.role || null;
   } catch (error) {
     console.error("Błąd odczytu staff:", error);
