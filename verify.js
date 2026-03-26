@@ -1,18 +1,4 @@
-import { completeEmailVerification } from "./auth.js";
-
-const btn = document.getElementById("verifyBtn");
-const info = document.getElementById("info");
-
-function setNotice(text, ok = false) {
-  info.textContent = text;
-  info.className = "notice" + (ok ? " ok" : "");
-}
-
-btn?.addEventListener("click", async () => {
-  try {
-    await completeEmailVerification();
-    setNotice("Adres e-mail potwierdzony.", true);
-  } catch (error) {
-    setNotice(error.message || String(error));
-  }
-});
+import { auth } from "./shared.js";
+import { applyActionCode } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+const q=new URLSearchParams(location.search); const code=q.get("oobCode"); const info=document.getElementById("info"); const btn=document.getElementById("verifyBtn");
+btn?.addEventListener("click", async ()=>{ try{ await applyActionCode(auth, code); info.textContent="Email został potwierdzony. Możesz wrócić do logowania."; btn.disabled=true; }catch(e){ info.textContent="Link weryfikacyjny jest nieważny lub wygasł."; console.error(e); } });

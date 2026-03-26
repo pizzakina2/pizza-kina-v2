@@ -1,35 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function staffDoc() { return get(/databases/$(database)/documents/staff/$(request.auth.uid)); }
+    function isRole(roles) { return signedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid)) && staffDoc().data.active == true && staffDoc().data.role in roles; }
 
     match /publicSettings/{docId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isRole(['admin']);
     }
-
     match /menuItems/{itemId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isRole(['admin']);
     }
-
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    match /staff/{uid} {
+      allow read, write: if isRole(['admin']);
     }
-
-    match /staff/{userId} {
-      allow read, write: if request.auth != null;
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid || isRole(['admin','service']);
+      match /orders/{orderId} {
+        allow read, write: if signedIn() && request.auth.uid == uid || isRole(['admin','service']);
+      }
     }
-
     match /orders/{orderId} {
-      allow read, write: if request.auth != null;
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow read: if signedIn() && resource.data.uid == request.auth.uid || isRole(['admin','service','kitchen']);
+      allow update: if isRole(['admin','service','kitchen']);
+      allow delete: if isRole(['admin']);
     }
-
-    match /orderQueueKitchen/{orderId} {
-      allow read, write: if request.auth != null;
-    }
-
     match /orderQueueScreen/{orderId} {
-      allow read, write: if request.auth != null;
+      allow read: if true;
+      allow write: if isRole(['admin','service','kitchen']);
     }
   }
 }

@@ -1,251 +1,443 @@
+import { firebaseConfig } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updatePassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithPopup,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  getDocs,
+  serverTimestamp,
+  runTransaction,
+  writeBatch,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getDatabase, ref, push, set, update, get, onValue, off, runTransaction, remove } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, updatePassword, sendEmailVerification, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset, applyActionCode } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-import { firebaseConfig, ADMIN_EMAIL } from "./firebase-config.js";
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const googleProvider = new GoogleAuthProvider();
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const auth = getAuth(app);
+googleProvider.setCustomParameters({ prompt: "select_account" });
 
-export { db, auth, ADMIN_EMAIL, ref, push, set, update, get, onValue, off, runTransaction, remove, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence, updatePassword, sendEmailVerification, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset, applyActionCode };
+export {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updatePassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+};
+
+export const $ = (id) => document.getElementById(id);
+export const money = (v) => `${Number(v || 0).toFixed(2)} zł`;
+export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+export const STATUS_FLOW = [
+  "oczekuje",
+  "potwierdzone",
+  "w realizacji",
+  "gotowe do odbioru",
+  "odebrane",
+  "anulowane",
+];
 
 export const DEFAULT_SETTINGS = {
-  texts: {
-    brandName: "PIZZA_KINA",
-    heroTitle: "Zamów pizzę online bez dzwonienia.",
-    heroSubtitle: "Klient ma konto i historię zamówień. Obsługa, kuchnia, admin i ekran numerków działają live.",
-    menuTitle: "Menu",
-    menuSubtitle: "Dodaj produkty do koszyka i wybierz godzinę odbioru.",
-    accountTitle: "Konto klienta",
-    accountSubtitle: "Zarejestruj się albo zaloguj. Widzisz tylko swoje zamówienia.",
-    ordersTitle: "Moje zamówienia",
-    ordersSubtitle: "Status zamówień i możliwość anulowania, zanim ruszy realizacja.",
-    serviceTitle: "Panel obsługi",
-    serviceSubtitle: "Pełna tabela aktywnych zamówień, dane klienta, druk i statystyki.",
-    kitchenTitle: "Panel kuchni",
-    kitchenSubtitle: "Uproszczona tabela zamówień i zbiorcza tabela przygotowania.",
-    adminTitle: "Panel admina",
-    adminSubtitle: "Ustawienia czasu realizacji, wyglądu, menu, dźwięków i treści.",
-    screenTitle: "Ekran odbioru",
-    screenSubtitle: "Duże numerki jak na wyświetlaczu odbioru."
-  },
-  theme: {
-    bgColor: "#121212",
-    panelColor: "#1e1e1e",
-    primaryColor: "#ff6b2d",
-    textColor: "#f5f5f5",
-    fontFamily: "Arial, Helvetica, sans-serif",
-    headingSizePx: 32,
-    bodySizePx: 16
-  },
-  media: {
-    logoEmoji: "🍕",
-    heroMain: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1400&q=80",
-    heroSecondary: "https://images.unsplash.com/photo-1541745537411-b8046dc6d66c?auto=format&fit=crop&w=1200&q=80",
-    heroThird: "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?auto=format&fit=crop&w=1200&q=80"
-  },
-  capacity: { minLeadMinutes: 15, slotMinutes: 15, unitsPerSlot: 4 },
-  schedule: {
-    days: { "0": true, "1": true, "2": true, "3": true, "4": true, "5": true, "6": true },
-    openTime: "13:30",
-    closeTime: "20:40"
-  },
+  brandName: "PiZZA-KINA",
+  heroTitle: "PiZZA-KINA",
+  heroSubtitle: "Świeża pizza, szybki odbiór i wygodne zamówienia online.",
+  menuTitle: "Menu",
+  menuSubtitle: "Dodaj produkty do koszyka i wybierz godzinę odbioru.",
+  serviceTitle: "Panel obsługi",
+  serviceSubtitle: "Aktywne zamówienia i statusy live.",
+  kitchenTitle: "Panel kuchni",
+  kitchenSubtitle: "Uproszczona kolejka realizacji.",
+  screenTitle: "Ekran odbioru",
+  screenSubtitle: "Duże numerki jak na wyświetlaczu odbioru.",
+  adminTitle: "Panel admina",
+  adminSubtitle: "Ustawienia, menu i historia zamówień.",
+  accountTitle: "Konto klienta",
+  accountSubtitle: "Historia zamówień i dane klienta.",
+  ordersTitle: "Moje zamówienia",
+  ordersSubtitle: "Twoja historia zamówień.",
+  logoEmoji: "🍕",
+  heroMain: "",
+  heroSecondary: "",
+  heroThird: "",
+  bgColor: "#121212",
+  panelColor: "#1e1e1e",
+  primaryColor: "#b91c1c",
+  textColor: "#f7f7f7",
+  fontFamily: "system-ui, sans-serif",
+  headingSizePx: 28,
+  bodySizePx: 16,
+  minLeadMinutes: 15,
+  slotMinutes: 15,
+  unitsPerSlot: 4,
+  openTime: "13:30",
+  closeTime: "20:40",
   deliveryOptions: {
     home: { enabled: true, label: "U mnie w domu" },
     pickup: { enabled: true, label: "Odbiór osobisty" },
-    delivery: { enabled: true, label: "Dowóz" }
+    delivery: { enabled: true, label: "Dowóz" },
   },
-  sounds: { serviceUrl: "", kitchenUrl: "", serviceEnabled: true, kitchenEnabled: true, serviceVolume: 0.7, kitchenVolume: 0.7 },
-  menu: {
-    margherita: { id: "margherita", name: "Margherita", price: 24, description: "Sos pomidorowy, mozzarella, oregano.", quantity: 999, enabled: true, image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1200&q=80" },
-    capricciosa: { id: "capricciosa", name: "Capricciosa", price: 31, description: "Szynka, pieczarki, mozzarella, sos.", quantity: 999, enabled: true, image: "https://images.unsplash.com/photo-1604382355076-af4b0eb60143?auto=format&fit=crop&w=1200&q=80" },
-    pepperoni: { id: "pepperoni", name: "Pepperoni", price: 34, description: "Pepperoni, mozzarella, sos pomidorowy.", quantity: 999, enabled: true, image: "https://images.unsplash.com/photo-1620374645498-af6bd681a0bd?auto=format&fit=crop&w=1200&q=80" },
-    hawajska: { id: "hawajska", name: "Hawajska", price: 32, description: "Szynka, ananas, mozzarella, sos.", quantity: 999, enabled: true, image: "https://images.unsplash.com/photo-1593560708920-61dd98c46a4e?auto=format&fit=crop&w=1200&q=80" },
-    diavola: { id: "diavola", name: "Diavola", price: 36, description: "Salami pikantne, jalapeño, mozzarella.", quantity: 999, enabled: true, image: "https://images.unsplash.com/photo-1548365328-9f547fb0953b?auto=format&fit=crop&w=1200&q=80" },
-    vege: { id: "vege", name: "Vege", price: 30, description: "Papryka, cebula, kukurydza, pieczarki.", quantity: 999, enabled: true, image: "https://images.unsplash.com/photo-1511689660979-10d2b1aada49?auto=format&fit=crop&w=1200&q=80" }
-  }
+  sounds: {
+    serviceUrl: "",
+    kitchenUrl: "",
+    serviceVolume: 0.7,
+    kitchenVolume: 0.7,
+    serviceEnabled: true,
+    kitchenEnabled: true,
+  },
 };
 
-export const ORDER_STATUSES = ["oczekuje","potwierdzone","w realizacji","gotowe do odbioru","odebrane","anulowane"];
-export const SERVICE_STATUS_OPTIONS = ORDER_STATUSES;
-export const KITCHEN_STATUS_OPTIONS = ["w realizacji", "gotowe do odbioru"];
-export function $(id){ return document.getElementById(id); }
-export function sanitizeId(value){ return String(value || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || `item-${Date.now()}`; }
-export function money(value){ return `${Number(value || 0).toFixed(2)} zł`; }
-export function dateKeyLocal(date=new Date()){ return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`; }
-export function shortDate(date=new Date()){ return `${String(date.getFullYear()).slice(-2)}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`; }
-export function formatDateTime(ts){ if(!ts) return "-"; const d=new Date(ts); return `${shortDate(d)} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
-export function badgeClass(status){ if(status==="oczekuje") return "badge badge-oczekuje"; if(status==="potwierdzone") return "badge badge-potwierdzone"; if(status==="w realizacji") return "badge badge-realizacja"; if(status==="gotowe do odbioru") return "badge badge-gotowe"; if(status==="odebrane") return "badge badge-odebrane"; return "badge badge-anulowane"; }
-export function badgeHtml(status){ return `<span class="${badgeClass(status)}">${status}</span>`; }
-export function deepMerge(target, source){ const out=structuredClone(target); if(!source||typeof source!=="object") return out; Object.keys(source).forEach((k)=>{ const sv=source[k]; const tv=out[k]; if(sv&&typeof sv==="object"&&!Array.isArray(sv)){ out[k]=deepMerge(tv||{}, sv); } else { out[k]=sv; } }); return out; }
-export function normalizeMenu(menu){ if(!menu||typeof menu!=="object") return structuredClone(DEFAULT_SETTINGS.menu); const out={}; Object.entries(menu).forEach(([key, item])=>{ const id=sanitizeId(item?.id||key); out[id]={ id, name:item?.name||id, price:Number(item?.price||0), description:item?.description||"", quantity:Number(item?.quantity ?? 999), enabled:item?.enabled!==false, image:item?.image||DEFAULT_SETTINGS.menu.margherita.image }; }); return out; }
-export function normalizeSettings(raw){
-  const merged=deepMerge(DEFAULT_SETTINGS, raw||{});
-  merged.menu=normalizeMenu(merged.menu);
-  merged.schedule = deepMerge(DEFAULT_SETTINGS.schedule, merged.schedule || {});
-  merged.deliveryOptions = deepMerge(DEFAULT_SETTINGS.deliveryOptions, merged.deliveryOptions || {});
-  return merged;
-}
-export function menuArray(settings){ return Object.values(normalizeMenu(settings?.menu)).sort((a,b)=>a.name.localeCompare(b.name,"pl")); }
-export async function ensureSettings(){ const settingsRef=ref(db, "settings"); const snapshot=await get(settingsRef); if(!snapshot.exists()){ await set(settingsRef, DEFAULT_SETTINGS); return structuredClone(DEFAULT_SETTINGS); } return normalizeSettings(snapshot.val()); }
-export function subscribeSettings(callback){ const settingsRef=ref(db, "settings"); return onValue(settingsRef, async (snapshot)=>{ if(!snapshot.exists()){ await set(settingsRef, DEFAULT_SETTINGS); callback(structuredClone(DEFAULT_SETTINGS)); return; } callback(normalizeSettings(snapshot.val())); }); }
-export function subscribeOrders(callback){ return onValue(ref(db, "orders"), (snapshot)=>callback(snapshot.val() || {})); }
-export function subscribeUserOrders(uid, callback){ return onValue(ref(db, `userOrders/${uid}`), (snapshot)=>callback(snapshot.val() || {})); }
-export function normalizeOrderRecord(id, value){
-  const createdAt = Number(value?.createdAt || 0);
-  const fallbackShort = String(value?.shortNumber || value?.orderSeq || String(id).slice(-3) || "000").padStart(3, "0").slice(-3);
+export function normalizeSettings(raw = {}) {
+  const d = structuredClone(DEFAULT_SETTINGS);
+  const src = raw || {};
   return {
-    id,
-    orderId: value?.orderId || id,
-    displayNumber: value?.displayNumber || (value?.shortNumber ? `${shortDate(createdAt ? new Date(createdAt) : new Date())} ${String(value.shortNumber).padStart(3,"0")}` : fallbackShort),
-    shortNumber: value?.shortNumber || fallbackShort,
-    createdAt,
-    updatedAt: Number(value?.updatedAt || createdAt || Date.now()),
-    customerName: value?.customerName || value?.name || "-",
-    customerPhone: value?.customerPhone || value?.phone || "-",
-    items: Array.isArray(value?.items) ? value.items : [],
-    pickupTime: value?.pickupTime || value?.pickupLabel || "-",
-    status: value?.status || "odebrane",
-    uid: value?.uid || "",
-    total: Number(value?.total || 0),
-    note: value?.note || "",
-    ...value
+    ...d,
+    ...src,
+    deliveryOptions: {
+      ...d.deliveryOptions,
+      ...(src.deliveryOptions || {}),
+      home: { ...d.deliveryOptions.home, ...(src.deliveryOptions?.home || {}) },
+      pickup: { ...d.deliveryOptions.pickup, ...(src.deliveryOptions?.pickup || {}) },
+      delivery: { ...d.deliveryOptions.delivery, ...(src.deliveryOptions?.delivery || {}) },
+    },
+    sounds: { ...d.sounds, ...(src.sounds || {}) },
   };
 }
-export function ordersArray(map){ return Object.entries(map||{}).map(([id, value])=>normalizeOrderRecord(id, value)).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)); }
-export function activeOrdersList(map){ return ordersArray(map).filter((order)=>!["odebrane","anulowane"].includes(order.status)); }
-export function activeProductionOrders(map){ return ordersArray(map).filter((order)=>!["odebrane","anulowane"].includes(order.status)); }
-export function cancellable(order){ return order?.status === "oczekuje"; }
-export async function buildNextOrderNumbers(){ const now=new Date(); const key=dateKeyLocal(now); const counterRef=ref(db, `counters/${key}`); const result=await runTransaction(counterRef, (current)=>Number(current||0)+1); const seq=Number(result.snapshot.val() || 1); const shortNumber=String(seq).padStart(3, "0"); return { dateKey:key, shortNumber, displayNumber:`${shortDate(now)} ${shortNumber}`, seq }; }
-export function cartUnits(items){ return items.reduce((sum, item)=>sum+Number(item.qty||0), 0); }
-export function orderUnits(order){ return (order.items||[]).reduce((sum, item)=>sum+Number(item.qty||0), 0); }
 
-export function minutesFromNow(ts){ return Math.max(0, Math.ceil((ts - Date.now()) / 60000)); }
-function parseHm(value, fallback){
-  const raw = String(value || fallback || "13:30");
-  const match = raw.match(/^(\d{1,2}):(\d{2})$/);
-  if(!match) return parseHm(fallback || "13:30");
-  return { h:Number(match[1]), m:Number(match[2]) };
+export function applyTheme(settings) {
+  const s = normalizeSettings(settings);
+  const root = document.documentElement;
+  root.style.setProperty("--bg", s.bgColor);
+  root.style.setProperty("--panel", s.panelColor);
+  root.style.setProperty("--panel-2", s.panelColor);
+  root.style.setProperty("--primary", s.primaryColor);
+  root.style.setProperty("--primary-2", s.primaryColor);
+  root.style.setProperty("--text", s.textColor);
+  root.style.setProperty("--font-family", s.fontFamily);
+  root.style.setProperty("--heading-size", `${Number(s.headingSizePx)}px`);
+  root.style.setProperty("--body-size", `${Number(s.bodySizePx)}px`);
+
+  document.querySelectorAll("[data-text-key]").forEach((node) => {
+    const key = node.dataset.textKey;
+    if (s[key]) node.textContent = s[key];
+  });
+  document.querySelectorAll("[data-media-key]").forEach((node) => {
+    const key = node.dataset.mediaKey;
+    if (!s[key]) return;
+    if (node.tagName === "IMG") node.src = s[key];
+    else node.textContent = s[key];
+  });
 }
-function setTimeOnDate(date, hm){
-  const next = new Date(date.getTime());
-  next.setHours(hm.h, hm.m, 0, 0);
-  return next;
-}
-export function formatDelivery(order){
-  const delivery = order?.delivery;
-  if(!delivery) return "-";
-  if(delivery.type === "delivery"){
-    return delivery.address ? `${delivery.label}: ${delivery.address}` : delivery.label || "Dowóz";
+
+export async function initAuthPersistence() {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (e) {
+    console.warn(e);
   }
-  return delivery.label || "-";
 }
-export function pickupOptions(ordersMap, settings, requestedUnits){
-  const cap=settings.capacity || DEFAULT_SETTINGS.capacity;
-  const schedule=settings.schedule || DEFAULT_SETTINGS.schedule;
-  const minLead=Math.max(15, Number(cap.minLeadMinutes||15));
-  const slotMinutes=Math.max(5, Number(cap.slotMinutes||15));
-  const unitsPerSlot=Math.max(1, Number(cap.unitsPerSlot||4));
-  const activeUnits=activeProductionOrders(ordersMap).reduce((sum, order)=>["gotowe do odbioru","odebrane","anulowane"].includes(order.status) ? sum : sum + orderUnits(order), 0);
-  const neededUnits=Math.max(1, Number(requestedUnits||1));
-  const earliestSlotIndex=Math.floor(activeUnits / unitsPerSlot);
-  const openHm=parseHm(schedule.openTime, "13:30");
-  const closeHm=parseHm(schedule.closeTime, "20:40");
-  const enabledDays = schedule.days || DEFAULT_SETTINGS.schedule.days;
-  const options=[];
-  const startTs = Date.now() + (minLead + earliestSlotIndex * slotMinutes) * 60000;
-  let cursor = new Date(startTs);
-  cursor.setSeconds(0,0);
-  cursor.setMinutes(Math.ceil(cursor.getMinutes()/5)*5);
-  let guard=0;
-  while(options.length < 8 && guard < 800){
+
+export async function signInWithGoogle() {
+  return signInWithPopup(auth, googleProvider);
+}
+
+export async function getStaffDoc(uid) {
+  if (!uid) return null;
+  const snap = await getDoc(doc(db, "staff", uid));
+  return snap.exists() ? { uid: snap.id, ...snap.data() } : null;
+}
+
+export async function ensureUserProfile(user, extra = {}) {
+  if (!user?.uid) return;
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
+  const payload = {
+    email: user.email || "",
+    displayName: user.displayName || extra.displayName || "",
+    phone: extra.phone || snap.data()?.phone || "",
+    updatedAt: serverTimestamp(),
+  };
+  if (!snap.exists()) payload.createdAt = serverTimestamp();
+  await setDoc(ref, payload, { merge: true });
+}
+
+export function subscribeSettings(cb) {
+  return onSnapshot(doc(db, "publicSettings", "current"), (snap) => {
+    cb(normalizeSettings(snap.exists() ? snap.data() : {}));
+  });
+}
+
+export async function saveSettings(settings) {
+  await setDoc(doc(db, "publicSettings", "current"), normalizeSettings(settings), { merge: true });
+}
+
+export function menuArray(itemsMapOrArray) {
+  if (Array.isArray(itemsMapOrArray)) return [...itemsMapOrArray].sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0));
+  return Object.entries(itemsMapOrArray || {}).map(([id, v]) => ({ id, ...v })).sort((a,b)=>Number(a.sortOrder||0)-Number(b.sortOrder||0));
+}
+
+export async function getAllMenuItems() {
+  const snap = await getDocs(query(collection(db, "menuItems"), orderBy("sortOrder", "asc")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+export function subscribeMenu(cb) {
+  return onSnapshot(query(collection(db, "menuItems"), orderBy("sortOrder", "asc")), (snap) => {
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  });
+}
+
+export async function upsertMenuItem(id, data) {
+  const ref = doc(db, "menuItems", id);
+  await setDoc(ref, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+export async function deleteMenuItem(id) {
+  await deleteDoc(doc(db, "menuItems", id));
+}
+
+export function ordersArray(input) {
+  const list = Array.isArray(input) ? input : Object.values(input || {});
+  return [...list].sort((a,b)=>(Number(b.createdAt||0)-Number(a.createdAt||0)));
+}
+
+export function formatDateTime(ts) {
+  if (!ts) return "-";
+  const d = ts?.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+  return d.toLocaleString("pl-PL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+export function badgeHtml(status) {
+  const safe = String(status || "oczekuje");
+  return `<span class="badge badge-${safe.replaceAll(" ", "-")}">${safe}</span>`;
+}
+
+export function orderSummary(order) {
+  return (order.items || []).map((item) => `${item.name} × ${item.qty}`).join(", ");
+}
+
+export function cartUnits(items) {
+  return (items || []).reduce((sum, item) => sum + Number(item.qty || 0), 0);
+}
+
+function parseHm(value, fallback = "13:30") {
+  const raw = String(value || fallback);
+  const [h, m] = raw.split(":").map(Number);
+  return { h: Number.isFinite(h) ? h : 13, m: Number.isFinite(m) ? m : 30 };
+}
+function setTimeOnDate(date, hm) {
+  const d = new Date(date);
+  d.setHours(hm.h, hm.m, 0, 0);
+  return d;
+}
+function minutesFromNow(ts) {
+  return Math.max(0, Math.round((ts - Date.now()) / 60000));
+}
+
+export function pickupOptions(settings, orders, requestedUnits = 1) {
+  const s = normalizeSettings(settings);
+  const minLead = Math.max(15, Number(s.minLeadMinutes || 15));
+  const slotMinutes = Math.max(5, Number(s.slotMinutes || 15));
+  const unitsPerSlot = Math.max(1, Number(s.unitsPerSlot || 4));
+  const activeUnits = ordersArray(orders).filter((o) => !["gotowe do odbioru", "odebrane", "anulowane"].includes(o.status)).reduce((sum, o) => sum + cartUnits(o.items || []), 0);
+  const earliestSlotIndex = Math.floor(activeUnits / unitsPerSlot);
+  const openHm = parseHm(s.openTime, "13:30");
+  const closeHm = parseHm(s.closeTime, "20:40");
+  const options = [];
+  let cursor = new Date(Date.now() + (minLead + earliestSlotIndex * slotMinutes) * 60000);
+  cursor.setSeconds(0, 0);
+  let guard = 0;
+  while (options.length < 8 && guard < 96) {
     guard += 1;
-    const dayEnabled = !!enabledDays[String(cursor.getDay())];
     const openAt = setTimeOnDate(cursor, openHm);
     const closeAt = setTimeOnDate(cursor, closeHm);
-    if(!dayEnabled){
-      cursor.setDate(cursor.getDate()+1);
+    if (cursor < openAt) cursor = openAt;
+    if (cursor > closeAt) {
+      cursor.setDate(cursor.getDate() + 1);
       cursor = setTimeOnDate(cursor, openHm);
       continue;
     }
-    if(cursor < openAt){
-      cursor = openAt;
-    }
-    if(cursor > closeAt){
-      cursor.setDate(cursor.getDate()+1);
-      cursor = setTimeOnDate(cursor, openHm);
-      continue;
-    }
-    const value=`${String(cursor.getHours()).padStart(2,"0")}:${String(cursor.getMinutes()).padStart(2,"0")}`;
-    let label = `${value} (${minutesFromNow(cursor.getTime())} min)`;
-    if(cursor.toDateString() !== new Date().toDateString()){
-      label = `${value} • ${cursor.toLocaleDateString("pl-PL", { weekday:"short", day:"2-digit", month:"2-digit" })}`;
-    }
-    options.push({ value, label, etaTs:cursor.getTime(), requestedUnits:neededUnits });
+    const value = `${String(cursor.getHours()).padStart(2, "0")}:${String(cursor.getMinutes()).padStart(2, "0")}`;
+    options.push({ value, label: `${value} (${minutesFromNow(cursor.getTime())} min)`, etaTs: cursor.getTime(), requestedUnits });
     cursor = new Date(cursor.getTime() + slotMinutes * 60000);
   }
   return options;
 }
-export function orderSummary(order){ return (order.items||[]).map((item)=>`${item.name} × ${item.qty}`).join(", "); }
-export function orderSummaryLines(order){ return (order.items||[]).map((item)=>`${item.name} × ${item.qty}`).join("<br>"); }
-export function applyTheme(settings){ const t=settings.theme || DEFAULT_SETTINGS.theme; const vars={ "--bg":t.bgColor, "--panel":t.panelColor, "--panel-2":t.panelColor, "--primary":t.primaryColor, "--primary-2":t.primaryColor, "--text":t.textColor, "--font-family":t.fontFamily, "--heading-size":`${Number(t.headingSizePx)}px`, "--body-size":`${Number(t.bodySizePx)}px` }; Object.entries(vars).forEach(([k,v])=>document.documentElement.style.setProperty(k,v)); document.querySelectorAll("[data-text-key]").forEach((node)=>{ const key=node.dataset.textKey; if(settings.texts?.[key]) node.textContent=settings.texts[key]; }); document.querySelectorAll("[data-media-key]").forEach((node)=>{ const key=node.dataset.mediaKey; const value=settings.media?.[key]; if(!value) return; if(node.tagName==="IMG") node.src=value; else node.textContent=value; }); }
-export function formatOption(option){ return `<option value="${option.value}">${option.label}</option>`; }
-export async function saveSettings(settings){ await set(ref(db, "settings"), normalizeSettings(settings)); }
-export async function updateOrderStatus(orderId, nextStatus){ const orderRef=ref(db, `orders/${orderId}`); const snapshot=await get(orderRef); if(!snapshot.exists()) return; const order=snapshot.val(); const payload={ status:nextStatus, updatedAt:Date.now() }; await update(orderRef, payload); if(order.uid){ await update(ref(db, `userOrders/${order.uid}/${orderId}`), payload); } }
-export async function cancelOrder(orderId, user){ const orderRef=ref(db, `orders/${orderId}`); const snapshot=await get(orderRef); if(!snapshot.exists()) return; const order=snapshot.val(); if(order.uid!==user.uid || !cancellable(order)){ throw new Error("Nie można anulować tego zamówienia."); } const payload={ status:"anulowane", cancelledAt:Date.now(), updatedAt:Date.now() }; await update(orderRef, payload); await update(ref(db, `userOrders/${user.uid}/${orderId}`), payload); for(const item of (order.items||[])){ const qtyRef=ref(db, `settings/menu/${item.id}/quantity`); await runTransaction(qtyRef, (current)=>Number(current ?? 0)+Number(item.qty || 0)); } }
-export async function createOrder(user, customer, cartItems, pickupOption){ const numbers=await buildNextOrderNumbers(); const orderId=push(ref(db, "orders")).key; const order={ orderId, uid:user.uid, email:user.email, customerName:customer.name, customerPhone:customer.phone, note:customer.note||"", delivery:customer.delivery || null, items:cartItems.map((item)=>({ id:item.id, name:item.name, price:Number(item.price), qty:Number(item.qty) })), units:cartUnits(cartItems), total:cartItems.reduce((sum, item)=>sum + (Number(item.price)*Number(item.qty)), 0), orderDateKey:numbers.dateKey, orderSeq:numbers.seq, shortNumber:numbers.shortNumber, displayNumber:numbers.displayNumber, createdAt:Date.now(), updatedAt:Date.now(), pickupTime:pickupOption.value, pickupEtaTs:pickupOption.etaTs, pickupLabel:pickupOption.label, status:"oczekuje" }; const reserved=[]; for(const item of cartItems){ const qtyRef=ref(db, `settings/menu/${item.id}/quantity`); const result=await runTransaction(qtyRef, (current)=>{ const available=Number(current ?? 0); const needed=Number(item.qty || 0); if(available < needed) return; return available-needed; }); if(!result.committed){ for(const rollbackItem of reserved){ const rollbackRef=ref(db, `settings/menu/${rollbackItem.id}/quantity`); await runTransaction(rollbackRef, (current)=>Number(current ?? 0)+Number(rollbackItem.qty || 0)); } throw new Error(`Brak wystarczającej ilości produktu: ${item.name}`); } reserved.push(item); } await set(ref(db, `orders/${orderId}`), order); await set(ref(db, `userOrders/${user.uid}/${orderId}`), order); return order; }
-export async function createGuestOrder(customer, cartItems, pickupOption){
-  const numbers = await buildNextOrderNumbers();
-  const orderId = push(ref(db, "orders")).key;
-  const order = {
-    orderId,
-    uid: "",
-    email: "",
-    customerName: customer.name || "Klient przy kasie",
+
+export function formatOption(option) {
+  return `<option value="${option.value}">${option.label}</option>`;
+}
+
+async function getNextDisplayNumber() {
+  const ref = doc(db, "publicSettings", "counters");
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    const current = snap.exists() ? Number(snap.data().orderSeq || 0) : 0;
+    const next = current + 1;
+    tx.set(ref, { orderSeq: next, updatedAt: serverTimestamp() }, { merge: true });
+    return `K${String(next).padStart(3, "0")}`;
+  });
+}
+
+export async function createOrder(user, customer, cartItems, pickupOption) {
+  const displayNumber = await getNextDisplayNumber();
+  const orderRef = doc(collection(db, "orders"));
+  const payload = {
+    orderId: orderRef.id,
+    uid: user?.uid || "",
+    email: user?.email || "",
+    customerName: customer.name || "Klient",
     customerPhone: customer.phone || "",
-    note: customer.note || "zamówienie przy kasie",
+    note: customer.note || "",
     delivery: customer.delivery || null,
-    items: cartItems.map((item)=>({ id:item.id, name:item.name, price:Number(item.price), qty:Number(item.qty) })),
+    items: (cartItems || []).map((i) => ({ id: i.id, name: i.name, price: Number(i.price || 0), qty: Number(i.qty || 0) })),
     units: cartUnits(cartItems),
-    total: cartItems.reduce((sum, item)=>sum + (Number(item.price)*Number(item.qty)), 0),
-    orderDateKey: numbers.dateKey,
-    orderSeq: numbers.seq,
-    shortNumber: numbers.shortNumber,
-    displayNumber: numbers.displayNumber,
+    total: (cartItems || []).reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 0), 0),
+    displayNumber,
+    shortNumber: displayNumber,
+    pickupTime: pickupOption?.value || "",
+    pickupEtaTs: pickupOption?.etaTs || Date.now(),
+    pickupLabel: pickupOption?.label || pickupOption?.value || "",
+    status: "oczekuje",
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    pickupTime: pickupOption?.value || customer.pickupTime || "",
-    pickupEtaTs: pickupOption?.etaTs || Date.now(),
-    pickupLabel: pickupOption?.label || customer.pickupTime || "",
-    status: "potwierdzone"
   };
-  const reserved = [];
-  for(const item of cartItems){
-    const qtyRef = ref(db, `settings/menu/${item.id}/quantity`);
-    const result = await runTransaction(qtyRef, (current)=>{
-      const available = Number(current ?? 0);
-      const needed = Number(item.qty || 0);
-      if(available < needed) return;
-      return available-needed;
-    });
-    if(!result.committed){
-      for(const rollbackItem of reserved){
-        const rollbackRef = ref(db, `settings/menu/${rollbackItem.id}/quantity`);
-        await runTransaction(rollbackRef, (current)=>Number(current ?? 0)+Number(rollbackItem.qty || 0));
-      }
-      throw new Error(`Brak wystarczającej ilości produktu: ${item.name}`);
-    }
-    reserved.push(item);
-  }
-  await set(ref(db, `orders/${orderId}`), order);
-  return order;
+  const batch = writeBatch(db);
+  batch.set(orderRef, payload);
+  if (user?.uid) batch.set(doc(db, "users", user.uid, "orders", orderRef.id), { createdAt: payload.createdAt, status: payload.status, displayNumber });
+  batch.set(doc(db, "orderQueueScreen", orderRef.id), { displayNumber, status: payload.status, updatedAt: Date.now() });
+  await batch.commit();
+  return payload;
 }
-export function countsForKitchen(ordersMap){ const counts={}; activeProductionOrders(ordersMap).filter((order)=>!["gotowe do odbioru"].includes(order.status)).forEach((order)=>{ (order.items||[]).forEach((item)=>{ counts[item.name]=counts[item.name] || { name:item.name, qty:0 }; counts[item.name].qty += Number(item.qty||0); }); }); return Object.values(counts).sort((a,b)=>b.qty-a.qty); }
-export function salesStats(ordersMap){ const stats={}; let totalRevenue=0; let totalItems=0; ordersArray(ordersMap).filter((order)=>!["anulowane"].includes(order.status)).forEach((order)=>{ (order.items||[]).forEach((item)=>{ stats[item.name]=stats[item.name] || { name:item.name, qty:0, revenue:0, unitPrice:Number(item.price||0) }; stats[item.name].qty += Number(item.qty||0); stats[item.name].revenue += Number(item.qty||0)*Number(item.price||0); totalItems += Number(item.qty||0); }); totalRevenue += Number(order.total||0); }); return { lines:Object.values(stats).sort((a,b)=>b.revenue-a.revenue), totalRevenue, totalItems }; }
-export function bigScreenGroups(ordersMap){ const source=activeProductionOrders(ordersMap); return { potwierdzone:source.filter((o)=>o.status==="potwierdzone"), realizacja:source.filter((o)=>o.status==="w realizacji"), gotowe:source.filter((o)=>o.status==="gotowe do odbioru") }; }
-export async function fileToDataUrl(file){ return new Promise((resolve,reject)=>{ const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result||"")); reader.onerror=reject; reader.readAsDataURL(file); }); }
-export async function playSound(src, enabled=true, volume=0.7){ if(!src || enabled===false) return; try{ const audio=new Audio(src); audio.currentTime=0; audio.volume=Math.max(0, Math.min(1, Number(volume || 0.7))); await audio.play(); }catch(error){ console.warn(error); } }
-export function requireAdmin(user){ return !!user && user.email===ADMIN_EMAIL; }
-export function installPwaHint(node){ const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent); const standalone=window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone===true; if(node && isiOS && !standalone){ setTimeout(()=>node.classList.remove("hidden"), 1000); } if("serviceWorker" in navigator){ window.addEventListener("load", ()=>navigator.serviceWorker.register("./sw.js").catch(console.error)); } }
-export async function initAuthPersistence(){ await setPersistence(auth, browserLocalPersistence); }
+
+export async function createGuestOrder(customer, cartItems, pickupOption) {
+  return createOrder(null, customer, cartItems, pickupOption);
+}
+
+export function subscribeOrders(cb) {
+  return onSnapshot(query(collection(db, "orders"), orderBy("createdAt", "desc")), (snap) => {
+    cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  });
+}
+
+export function subscribeUserOrders(user, cb) {
+  if (!user?.uid) return () => {};
+  return onSnapshot(query(collection(db, "orders"), where("uid", "==", user.uid), orderBy("createdAt", "desc")), (snap) => cb(snap.docs.map((d)=>({ id:d.id, ...d.data() }))));
+}
+
+export async function updateOrderStatus(orderId, nextStatus) {
+  await updateDoc(doc(db, "orders", orderId), { status: nextStatus, updatedAt: Date.now() });
+  await setDoc(doc(db, "orderQueueScreen", orderId), { status: nextStatus, updatedAt: Date.now() }, { merge: true });
+}
+
+export async function cancelOrder(orderId, user) {
+  const ref = doc(db, "orders", orderId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) throw new Error("Brak zamówienia.");
+  const data = snap.data();
+  if (data.uid !== user.uid) throw new Error("Brak uprawnień.");
+  await updateOrderStatus(orderId, "anulowane");
+}
+
+export function salesStats(orders) {
+  const stats = {};
+  let totalRevenue = 0;
+  let totalItems = 0;
+  ordersArray(orders).filter((o)=>o.status !== "anulowane").forEach((o) => {
+    totalRevenue += Number(o.total || 0);
+    (o.items || []).forEach((item) => {
+      totalItems += Number(item.qty || 0);
+      stats[item.name] ||= { name: item.name, qty: 0, revenue: 0, unitPrice: Number(item.price || 0) };
+      stats[item.name].qty += Number(item.qty || 0);
+      stats[item.name].revenue += Number(item.qty || 0) * Number(item.price || 0);
+    });
+  });
+  return { lines: Object.values(stats).sort((a,b)=>b.revenue-a.revenue), totalRevenue, totalItems };
+}
+
+export function countsForKitchen(orders) {
+  const counts = {};
+  ordersArray(orders).filter((o)=>!["gotowe do odbioru","odebrane","anulowane"].includes(o.status)).forEach((o) => {
+    (o.items || []).forEach((item) => {
+      counts[item.name] ||= { name: item.name, qty: 0 };
+      counts[item.name].qty += Number(item.qty || 0);
+    });
+  });
+  return Object.values(counts).sort((a,b)=>b.qty-a.qty);
+}
+
+export function bigScreenGroups(orders) {
+  const list = ordersArray(orders).filter((o)=>!["odebrane","anulowane"].includes(o.status));
+  return {
+    potwierdzone: list.filter((o)=>o.status === "potwierdzone" || o.status === "oczekuje"),
+    realizacja: list.filter((o)=>o.status === "w realizacji"),
+    gotowe: list.filter((o)=>o.status === "gotowe do odbioru"),
+  };
+}
+
+export async function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function playSound(src, enabled = true, volume = 0.7) {
+  if (!src || enabled === false) return;
+  try {
+    const audio = new Audio(src);
+    audio.volume = Math.max(0, Math.min(1, Number(volume || 0.7)));
+    await audio.play();
+  } catch (e) {
+    console.warn(e);
+  }
+}
+
+export async function getCurrentUserProfile(uid) {
+  const snap = await getDoc(doc(db, "users", uid));
+  return snap.exists() ? snap.data() : null;
+}
+
+export async function saveCurrentUserProfile(uid, data) {
+  await setDoc(doc(db, "users", uid), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+export function requireRole(staff, roles) {
+  return !!staff?.active && roles.includes(staff.role);
+}
+
+export function installPwaHint(node) {
+  const isiOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  if (node && isiOS && !standalone) setTimeout(() => node.classList.remove("hidden"), 1000);
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(console.error));
+  }
+}
